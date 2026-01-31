@@ -82,7 +82,9 @@ services:
       - DEFAULT_USER_NAME=${DEFAULT_USER_NAME:-Farmer}
     depends_on:
       - db
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
+      - ./backend:/app
       - ./backend/app/config:/app/app/config:ro  # Mount config directory as read-only
 
   db:

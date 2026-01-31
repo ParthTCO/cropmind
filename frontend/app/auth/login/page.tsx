@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSelector } from "@/components/language-selector"
 import { useAuth } from "@/lib/auth-context"
+import { getUserProfile } from "@/lib/api"
+import { auth } from "@/lib/firebase"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,7 +21,24 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       await signInWithGoogle()
-      router.push("/onboarding")
+      // The auth context handles the login call to backend
+      // Now we check if we need onboarding
+      const user = auth.currentUser;
+      if (user?.email) {
+        try {
+          const profile = await getUserProfile(user.email);
+          if (profile.has_farm_profile) {
+            router.push("/dashboard");
+          } else {
+            router.push("/onboarding");
+          }
+        } catch (e) {
+          // If profile fetch fails (e.g. 404), assume new user
+          router.push("/onboarding");
+        }
+      } else {
+        router.push("/dashboard");
+      }
     } catch (error) {
       console.error("Login failed:", error)
     } finally {

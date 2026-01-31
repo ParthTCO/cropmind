@@ -5,6 +5,8 @@ import { Send, Bot, User, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth-context"
+import { sendChatMessage } from "@/lib/api"
 
 interface Message {
   id: string
@@ -20,7 +22,7 @@ const exampleConversations = [
   },
   {
     user: "बारिश के बाद क्या करूं?",
-    assistant: "कल बारिश की संभावना 60% है (15-20mm अपेक्षित)। मेरी सलाह:\n\n1. बारिश के दौरान सिंचाई रोकें\n2. बारिश के बाद खेत में जल निकासी की जांच करें\n3. बारिश रुकने के 24 घंटे बाद नाइट्रोजन उर्वरक लगाएं\n4. कीट संक्रमण के लिए निगरानी करें क्योंकि नमी फंगल रोग बढ़ा सकती है",
+    assistant: "कल बारिश की संभावना 60% है (15-20mm अपेक्षित)। मेरी सलाह:\\n\\n1. बारिश के दौरान सिंचाई रोकें\\n2. बारिश के बाद खेत में जल निकासी की जांच करें\\n3. बारिश रुकने के 24 घंटे बाद नाइट्रोजन उर्वरक लगाएं\\n4. कीट संक्रमण के लिए निगरानी करें क्योंकि नमी फंगल रोग बढ़ा सकती है",
   },
 ]
 
@@ -32,6 +34,7 @@ const suggestedQuestions = [
 ]
 
 export default function ChatPage() {
+  const { user } = useAuth()
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -53,7 +56,7 @@ export default function ChatPage() {
   }, [messages])
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return
+    if (!input.trim() || isLoading || !user?.email) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -66,23 +69,28 @@ export default function ChatPage() {
     setInput("")
     setIsLoading(true)
 
-    // Simulate AI response
-    setTimeout(() => {
-      const responses = [
-        "Based on your wheat crop at Day 32 (Vegetative Stage), I recommend focusing on nitrogen application. The current weather conditions are favorable for fertilization after tomorrow's expected rain.",
-        "आपके प्रश्न के आधार पर, मैं सुझाव दूंगा कि आप अपनी फसल की नियमित निगरानी करें। वर्तमान मौसम की स्थिति को देखते हुए, कीट नियंत्रण पर ध्यान दें।",
-        "तुमच्या गव्हाच्या पिकासाठी, सध्याच्या टप्प्यावर पाणी व्यवस्थापन महत्वाचे आहे. उद्या पाऊस अपेक्षित असल्याने, पाणी देणे थांबवा आणि पाणी वाहून जाण्याची व्यवस्था तपासा.",
-      ]
-      
+    try {
+      const response = await sendChatMessage(user.email, input)
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: response.answer,
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, assistantMessage])
+    } catch (err) {
+      console.error("Chat error:", err)
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again.",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   return (
@@ -178,17 +186,21 @@ export default function ChatPage() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Ask about pests, irrigation, fertilizer, crop issues..."
-                className="flex-1 rounded-xl border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                disabled={!user?.email}
+                className="flex-1 rounded-xl border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               />
               <Button
                 onClick={handleSend}
-                disabled={!input.trim() || isLoading}
+                disabled={!input.trim() || isLoading || !user?.email}
                 size="icon"
                 className="h-12 w-12 shrink-0 rounded-xl"
               >
                 <Send className="h-5 w-5" />
               </Button>
             </div>
+            {!user?.email && (
+              <p className="mt-2 text-xs text-muted-foreground">Please sign in to use the chat</p>
+            )}
           </div>
         </div>
       </Card>

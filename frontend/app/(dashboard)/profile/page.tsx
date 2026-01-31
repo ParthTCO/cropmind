@@ -1,46 +1,103 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { User, MapPin, Languages, Wheat, Calendar, LogOut, Save, Edit2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-const initialProfile = {
-  name: "Ramesh Patil",
-  phone: "+91 98765 43210",
-  state: "Maharashtra",
-  district: "Nashik",
-  village: "Dindori",
-  crop: "Wheat",
-  sowingDate: "2024-12-01",
-  language: "mr",
-}
+import { useAuth } from "@/lib/auth-context"
+import { getUserProfile, updateUserProfile, UserProfile } from "@/lib/api"
+import { auth } from "@/lib/firebase"
+import { signOut } from "firebase/auth"
 
 const languages = [
-  { id: "en", name: "English", native: "English" },
-  { id: "hi", name: "Hindi", native: "हिन्दी" },
-  { id: "mr", name: "Marathi", native: "मराठी" },
+  { id: "English", name: "English", native: "English" },
+  { id: "Hindi", name: "Hindi", native: "हिन्दी" },
+  { id: "Marathi", name: "Marathi", native: "मराठी" },
 ]
 
 export default function ProfilePage() {
   const router = useRouter()
-  const [profile, setProfile] = useState(initialProfile)
+  const { user } = useAuth()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSave = () => {
+  // Load profile data on mount
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user?.email) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        const data = await getUserProfile(user.email)
+        setProfile(data)
+      } catch (err) {
+        console.error("Failed to load profile:", err)
+        setError("Failed to load profile data")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadProfile()
+  }, [user?.email])
+
+  const handleSave = async () => {
+    if (!user?.email || !profile) return
+
     setIsSaving(true)
-    setTimeout(() => {
-      setIsSaving(false)
+    setError(null)
+
+    try {
+      await updateUserProfile(user.email, {
+        name: profile.name,
+        state: profile.state,
+        district: profile.district,
+        village: profile.village,
+        preferred_language: profile.preferred_language,
+      })
       setIsEditing(false)
-    }, 1000)
+    } catch (err) {
+      console.error("Failed to save profile:", err)
+      setError("Failed to save changes. Please try again.")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  const handleLogout = () => {
-    router.push("/")
+  const handleLogout = async () => {
+    try {
+      await signOut(auth)
+      router.push("/")
+    } catch (err) {
+      console.error("Logout failed:", err)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div className="text-center">Loading profile...</div>
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div className="text-center text-destructive">
+          {error || "Profile not found. Please complete onboarding."}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -69,6 +126,12 @@ export default function ProfilePage() {
         </Button>
       </div>
 
+      {error && (
+        <div className="rounded-lg bg-destructive/10 p-4 text-destructive">
+          {error}
+        </div>
+      )}
+
       {/* Profile Card */}
       <Card className="border-border/50">
         <CardHeader>
@@ -77,8 +140,8 @@ export default function ProfilePage() {
               <User className="h-8 w-8" />
             </div>
             <div>
-              <CardTitle className="text-xl">{profile.name}</CardTitle>
-              <CardDescription>{profile.phone}</CardDescription>
+              <CardTitle className="text-xl">{profile.name || user?.displayName || "User"}</CardTitle>
+              <CardDescription>{profile.email}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -94,17 +157,17 @@ export default function ProfilePage() {
                 <Label htmlFor="name">Full Name</Label>
                 <Input
                   id="name"
-                  value={profile.name}
+                  value={profile.name || ""}
                   onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                   disabled={!isEditing}
                   className="rounded-lg"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="phone"
-                  value={profile.phone}
+                  id="email"
+                  value={profile.email}
                   disabled
                   className="rounded-lg bg-muted"
                 />
@@ -123,7 +186,7 @@ export default function ProfilePage() {
                 <Label htmlFor="state">State</Label>
                 <Input
                   id="state"
-                  value={profile.state}
+                  value={profile.state || ""}
                   onChange={(e) => setProfile({ ...profile, state: e.target.value })}
                   disabled={!isEditing}
                   className="rounded-lg"
@@ -133,7 +196,7 @@ export default function ProfilePage() {
                 <Label htmlFor="district">District</Label>
                 <Input
                   id="district"
-                  value={profile.district}
+                  value={profile.district || ""}
                   onChange={(e) => setProfile({ ...profile, district: e.target.value })}
                   disabled={!isEditing}
                   className="rounded-lg"
@@ -143,7 +206,7 @@ export default function ProfilePage() {
                 <Label htmlFor="village">Village</Label>
                 <Input
                   id="village"
-                  value={profile.village}
+                  value={profile.village || ""}
                   onChange={(e) => setProfile({ ...profile, village: e.target.value })}
                   disabled={!isEditing}
                   className="rounded-lg"
@@ -153,36 +216,38 @@ export default function ProfilePage() {
           </div>
 
           {/* Crop Info */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <Wheat className="h-4 w-4" />
-              Crop Information
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="crop">Current Crop</Label>
-                <Input
-                  id="crop"
-                  value={profile.crop}
-                  disabled
-                  className="rounded-lg bg-muted"
-                />
+          {profile.has_farm_profile && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Wheat className="h-4 w-4" />
+                Crop Information
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="sowingDate">Sowing Date</Label>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="crop">Current Crop</Label>
                   <Input
-                    id="sowingDate"
-                    type="date"
-                    value={profile.sowingDate}
+                    id="crop"
+                    value={profile.crop || ""}
                     disabled
                     className="rounded-lg bg-muted"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sowingDate">Sowing Date</Label>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="sowingDate"
+                      type="date"
+                      value={profile.sowing_date || ""}
+                      disabled
+                      className="rounded-lg bg-muted"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Language */}
           <div className="space-y-4">
@@ -194,13 +259,12 @@ export default function ProfilePage() {
               {languages.map((lang) => (
                 <button
                   key={lang.id}
-                  onClick={() => isEditing && setProfile({ ...profile, language: lang.id })}
+                  onClick={() => isEditing && setProfile({ ...profile, preferred_language: lang.id })}
                   disabled={!isEditing}
-                  className={`rounded-xl border-2 p-3 text-center transition-all ${
-                    profile.language === lang.id
+                  className={`rounded-xl border-2 p-3 text-center transition-all ${profile.preferred_language === lang.id
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-primary/50"
-                  } ${!isEditing ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                    } ${!isEditing ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
                 >
                   <div className="font-medium">{lang.native}</div>
                   <div className="text-xs text-muted-foreground">{lang.name}</div>

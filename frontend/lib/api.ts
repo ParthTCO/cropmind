@@ -90,3 +90,104 @@ export function getTimeBasedGreeting(): string {
     if (hour < 17) return "Good Afternoon";
     return "Good Evening";
 }
+
+// User Profile API
+export interface UserProfile {
+    email: string;
+    name?: string;
+    preferred_language: string;
+    phone?: string;
+    state?: string;
+    district?: string;
+    village?: string;
+    crop?: string;
+    sowing_date?: string;
+    has_farm_profile: boolean;
+}
+
+export async function getUserProfile(email: string): Promise<UserProfile> {
+    const response = await fetch(`${API_URL}/user/profile?email=${encodeURIComponent(email)}`);
+    if (!response.ok) {
+        throw new Error("Failed to fetch user profile");
+    }
+    return response.json();
+}
+
+export async function updateUserProfile(email: string, data: Partial<UserProfile>): Promise<void> {
+    const response = await fetch(`${API_URL}/user/profile`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, ...data }),
+    });
+    if (!response.ok) {
+        throw new Error("Failed to update user profile");
+    }
+}
+
+// Alerts API
+export interface Alert {
+    id: number;
+    type: string;
+    message: string;
+    severity: string;
+    created_at: string;
+}
+
+export async function getAlerts(email: string): Promise<Alert[]> {
+    const response = await fetch(`${API_URL}/alerts/?email=${encodeURIComponent(email)}`);
+    if (!response.ok) {
+        throw new Error("Failed to fetch alerts");
+    }
+    return response.json();
+}
+
+// Chat API
+export interface ChatMessage {
+    answer: string;
+    stage: string;
+    actionable_steps: string[];
+}
+
+export async function sendChatMessage(email: string, question: string): Promise<ChatMessage> {
+    const response = await fetch(`${API_URL}/chat/query`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            user_email: email,
+            question: question
+        }),
+    });
+    if (!response.ok) {
+        throw new Error("Failed to send chat message");
+    }
+    return response.json();
+}
+// Onboarding API
+export interface OnboardingData {
+    user_email: string;
+    crop: string;
+    sowing_date: string;
+    state: string;
+    district: string;
+    village: string;
+    preferred_language: string;
+}
+
+export async function submitOnboarding(data: OnboardingData): Promise<void> {
+    const response = await fetch(`${API_URL}/onboarding/setup`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "Failed to submit onboarding data");
+    }
+}

@@ -76,3 +76,24 @@ class AlertResponse(BaseModel):
     created_at: datetime
     class Config:
         from_attributes = True
+
+# User Profile Schemas
+class UserProfileResponse(BaseModel):
+    email: str
+    name: Optional[str] = None
+    preferred_language: str
+    phone: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    village: Optional[str] = None
+    crop: Optional[str] = None
+    sowing_date: Optional[str] = None
+    has_farm_profile: bool
+
+class UserProfileUpdate(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+    preferred_language: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    village: Optional[str] = None

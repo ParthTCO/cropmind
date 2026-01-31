@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useAuth } from "@/lib/auth-context"
+import { submitOnboarding } from "@/lib/api"
 
 const crops = [
   { id: "wheat", name: "Wheat", hindi: "गेहूँ" },
@@ -18,9 +20,9 @@ const crops = [
 ]
 
 const languages = [
-  { id: "en", name: "English", native: "English" },
-  { id: "hi", name: "Hindi", native: "हिन्दी" },
-  { id: "mr", name: "Marathi", native: "मराठी" },
+  { id: "English", name: "English", native: "English" },
+  { id: "Hindi", name: "Hindi", native: "हिन्दी" },
+  { id: "Marathi", name: "Marathi", native: "मराठी" },
 ]
 
 const states = [
@@ -38,23 +40,57 @@ const states = [
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [step, setStep] = useState(1)
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     crop: "",
     sowingDate: "",
     state: "",
     district: "",
     village: "",
-    language: "en",
+    language: "English",
   })
+
+  // Prevent access if not logged in
+  if (typeof window !== 'undefined' && !user && !loading) {
+    // router.push("/") // Optional: strict redirect
+  }
 
   const totalSteps = 4
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < totalSteps) {
       setStep(step + 1)
     } else {
+      // Submit data on final step
+      await handleSubmit()
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!user?.email) {
+      alert("Please sign in to complete onboarding")
+      return
+    }
+
+    try {
+      setLoading(true)
+      await submitOnboarding({
+        user_email: user.email,
+        crop: formData.crop,
+        sowing_date: formData.sowingDate,
+        state: formData.state,
+        district: formData.district,
+        village: formData.village || "Unknown",
+        preferred_language: formData.language,
+      })
       router.push("/dashboard")
+    } catch (error) {
+      console.error("Onboarding failed:", error)
+      alert("Failed to save your details. Please try again.")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -109,9 +145,8 @@ export default function OnboardingPage() {
                 {Array.from({ length: totalSteps }).map((_, i) => (
                   <div
                     key={i}
-                    className={`h-2 w-8 rounded-full transition-colors ${
-                      i < step ? "bg-primary" : "bg-muted"
-                    }`}
+                    className={`h-2 w-8 rounded-full transition-colors ${i < step ? "bg-primary" : "bg-muted"
+                      }`}
                   />
                 ))}
               </div>
@@ -151,11 +186,10 @@ export default function OnboardingPage() {
                   <button
                     key={crop.id}
                     onClick={() => setFormData({ ...formData, crop: crop.id })}
-                    className={`flex flex-col items-center justify-center rounded-xl border-2 p-6 transition-all ${
-                      formData.crop === crop.id
+                    className={`flex flex-col items-center justify-center rounded-xl border-2 p-6 transition-all ${formData.crop === crop.id
                         ? "border-primary bg-primary/10"
                         : "border-border hover:border-primary/50"
-                    }`}
+                      }`}
                   >
                     <span className="text-lg font-medium">{crop.name}</span>
                     <span className="text-sm text-muted-foreground">{crop.hindi}</span>
@@ -239,11 +273,10 @@ export default function OnboardingPage() {
                   <button
                     key={lang.id}
                     onClick={() => setFormData({ ...formData, language: lang.id })}
-                    className={`flex w-full items-center justify-between rounded-xl border-2 px-4 py-4 transition-all ${
-                      formData.language === lang.id
+                    className={`flex w-full items-center justify-between rounded-xl border-2 px-4 py-4 transition-all ${formData.language === lang.id
                         ? "border-primary bg-primary/10"
                         : "border-border hover:border-primary/50"
-                    }`}
+                      }`}
                   >
                     <div className="flex flex-col items-start">
                       <span className="text-lg font-medium">{lang.native}</span>
@@ -263,6 +296,7 @@ export default function OnboardingPage() {
                 <Button
                   variant="outline"
                   onClick={handleBack}
+                  disabled={loading}
                   className="h-12 flex-1 gap-2 rounded-xl bg-transparent"
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -271,11 +305,17 @@ export default function OnboardingPage() {
               )}
               <Button
                 onClick={handleNext}
-                disabled={!canProceed()}
+                disabled={!canProceed() || loading}
                 className="h-12 flex-1 gap-2 rounded-xl"
               >
-                {step === totalSteps ? "Finish Setup" : "Continue"}
-                <ArrowRight className="h-4 w-4" />
+                {loading ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <>
+                    {step === totalSteps ? "Finish Setup" : "Continue"}
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>

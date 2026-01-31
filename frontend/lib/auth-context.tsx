@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const result = await signInWithPopup(auth, googleProvider);
             // Notify backend about the login
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-            await fetch(`${apiUrl}/auth/login`, {
+            const response = await fetch(`${apiUrl}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -45,6 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     uid: result.user.uid
                 })
             });
+
+            // Check if user has a farm profile to determine redirect
+            if (response.ok) {
+                // We'll let the component that calls this handle the redirect based on user info
+                // but we fetch it here to ensure the backend is synced
+            }
         } catch (error) {
             console.error("Google Sign-In Error:", error);
             throw error;

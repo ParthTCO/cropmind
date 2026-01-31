@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { CropStageCard } from "@/components/dashboard/crop-stage-card"
 import { TodayActionCard } from "@/components/dashboard/today-action-card"
 import { WeatherWidget } from "@/components/dashboard/weather-widget"
@@ -20,6 +21,7 @@ import {
 } from "@/lib/api"
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null)
@@ -47,10 +49,19 @@ export default function DashboardPage() {
           getUserInfo(user.email)
         ])
 
+        // Handle User Info & Redirects
+        if (info.status === "fulfilled") {
+          setUserInfo(info.value);
+          // If user has no farm profile, redirect to onboarding
+          if (!info.value.has_farm_profile) {
+            router.push("/onboarding");
+            return;
+          }
+        }
+
         if (summary.status === "fulfilled") setDashboardData(summary.value)
         if (weather.status === "fulfilled") setWeatherData(weather.value)
         if (lifecycle.status === "fulfilled") setLifecycleData(lifecycle.value)
-        if (info.status === "fulfilled") setUserInfo(info.value)
 
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err)
@@ -61,7 +72,7 @@ export default function DashboardPage() {
     }
 
     fetchData()
-  }, [user?.email])
+  }, [user?.email, router])
 
   // Get greeting and user display name
   const greeting = getTimeBasedGreeting()

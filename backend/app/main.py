@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import onboarding, dashboard, chat, lifecycle, alerts, auth
+from app.db import engine, get_db
+from app.api import onboarding, dashboard, chat, lifecycle, alerts, auth, user
 from app.db import engine
 from app.models import database
 from app.config import get_settings
@@ -46,6 +47,7 @@ app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(lifecycle.router, prefix="/lifecycle", tags=["Lifecycle"])
 app.include_router(alerts.router, prefix="/alerts", tags=["Alerts"])
+app.include_router(user.router, prefix="/user", tags=["User Profile"])
 
 @app.get("/")
 async def root():
