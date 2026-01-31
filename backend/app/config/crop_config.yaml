@@ -1,0 +1,182 @@
+# CropMind AI - Crop Lifecycle Configuration
+# Define lifecycle stages for different crop types
+# Each crop has different growth durations and stages
+
+crops:
+  wheat:
+    total_days: 120
+    description: "Winter wheat lifecycle from planning to harvest"
+    stages:
+      - id: "planning"
+        label: "Planning"
+        start_day: -30
+        end_day: 0
+        description: "Field preparation and planning phase"
+        
+      - id: "sowing"
+        label: "Sowing"
+        start_day: 0
+        end_day: 7
+        description: "Seed sowing period"
+        
+      - id: "germination"
+        label: "Germination"
+        start_day: 7
+        end_day: 21
+        description: "Seed germination and emergence"
+        
+      - id: "vegetative"
+        label: "Vegetative Growth"
+        start_day: 21
+        end_day: 60
+        description: "Tillering and stem elongation"
+        
+      - id: "flowering"
+        label: "Flowering"
+        start_day: 60
+        end_day: 90
+        description: "Flowering and grain formation"
+        
+      - id: "harvest"
+        label: "Harvest"
+        start_day: 90
+        end_day: 120
+        description: "Maturity and harvest readiness"
+
+  rice:
+    total_days: 140
+    description: "Paddy rice lifecycle from transplanting to harvest"
+    stages:
+      - id: "planning"
+        label: "Planning"
+        start_day: -30
+        end_day: 0
+        description: "Land preparation and nursery"
+        
+      - id: "transplanting"
+        label: "Transplanting"
+        start_day: 0
+        end_day: 10
+        description: "Seedling transplanting"
+        
+      - id: "tillering"
+        label: "Tillering"
+        start_day: 10
+        end_day: 45
+        description: "Active tillering phase"
+        
+      - id: "stem_elongation"
+        label: "Stem Elongation"
+        start_day: 45
+        end_day: 70
+        description: "Panicle initiation and stem growth"
+        
+      - id: "flowering"
+        label: "Flowering"
+        start_day: 70
+        end_day: 95
+        description: "Heading and flowering"
+        
+      - id: "ripening"
+        label: "Ripening"
+        start_day: 95
+        end_day: 120
+        description: "Grain filling and ripening"
+        
+      - id: "harvest"
+        label: "Harvest"
+        start_day: 120
+        end_day: 140
+        description: "Harvest period"
+
+  cotton:
+    total_days: 160
+    description: "Cotton lifecycle from sowing to picking"
+    stages:
+      - id: "planning"
+        label: "Planning"
+        start_day: -30
+        end_day: 0
+        description: "Field preparation"
+        
+      - id: "sowing"
+        label: "Sowing"
+        start_day: 0
+        end_day: 7
+        description: "Seed sowing"
+        
+      - id: "emergence"
+        label: "Emergence"
+        start_day: 7
+        end_day: 21
+        description: "Seedling emergence"
+        
+      - id: "vegetative"
+        label: "Vegetative Growth"
+        start_day: 21
+        end_day: 60
+        description: "Square formation and branching"
+        
+      - id: "flowering"
+        label: "Flowering"
+        start_day: 60
+        end_day: 100
+        description: "Flowering and boll formation"
+        
+      - id: "boll_development"
+        label: "Boll Development"
+        start_day: 100
+        end_day: 140
+        description: "Boll maturation"
+        
+      - id: "harvest"
+        label: "Harvest"
+        start_day: 140
+        end_day: 160
+        description: "Cotton picking period"
+
+  sugarcane:
+    total_days: 365
+    description: "Sugarcane lifecycle - full year crop"
+    stages:
+      - id: "planning"
+        label: "Planning"
+        start_day: -30
+        end_day: 0
+        description: "Land preparation"
+        
+      - id: "planting"
+        label: "Planting"
+        start_day: 0
+        end_day: 14
+        description: "Sett planting"
+        
+      - id: "germination"
+        label: "Germination"
+        start_day: 14
+        end_day: 45
+        description: "Bud sprouting and germination"
+        
+      - id: "tillering"
+        label: "Tillering"
+        start_day: 45
+        end_day: 120
+        description: "Active tillering phase"
+        
+      - id: "grand_growth"
+        label: "Grand Growth"
+        start_day: 120
+        end_day: 270
+        description: "Rapid elongation and maximum growth"
+        
+      - id: "maturation"
+        label: "Maturation"
+        start_day: 270
+        end_day: 330
+        description: "Sugar accumulation"
+        
+      - id: "harvest"
+        label: "Harvest"
+        start_day: 330
+        end_day: 365
+        description: "Harvest period"

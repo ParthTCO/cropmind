@@ -1,9 +1,10 @@
 fastapi
-uvicorn
+uvicorn[standard]
 sqlalchemy
 psycopg2-binary
-pydantic[email]
 groq
 pinecone
-python-dotenv
+pydantic-settings
 httpx
+pyyaml
+email-validator

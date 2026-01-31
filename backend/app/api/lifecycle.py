@@ -3,20 +3,13 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.database import User, FarmState, AdviceHistory
 from app.schemas.schemas import LifecycleStageResponse
+from app.config import get_settings
+from app.services.crop_config_loader import get_crop_loader
 from typing import List
 import datetime
 
 router = APIRouter()
-
-# Crop stage definitions (in days from sowing)
-CROP_STAGES = [
-    {"id": "planning", "label": "Planning", "start_day": -30, "end_day": 0},
-    {"id": "sowing", "label": "Sowing", "start_day": 0, "end_day": 7},
-    {"id": "germination", "label": "Germination", "start_day": 7, "end_day": 21},
-    {"id": "vegetative", "label": "Vegetative Growth", "start_day": 21, "end_day": 60},
-    {"id": "flowering", "label": "Flowering", "start_day": 60, "end_day": 90},
-    {"id": "harvest", "label": "Harvest", "start_day": 90, "end_day": 120},
-]
+settings = get_settings()
 
 def calculate_stage_status(stage: dict, day_count: int) -> str:
     """Determine if a stage is completed, current, or upcoming"""
@@ -44,6 +37,12 @@ async def get_lifecycle_status(email: str, db: Session = Depends(get_db)):
     # Calculate day count from sowing
     day_count = (datetime.date.today() - farm.sowing_date).days
     
+    # Load crop-specific stages from config
+    crop_loader = get_crop_loader(settings.crop_config_path)
+    crop_config = crop_loader.get_crop_config(farm.crop_type)
+    CROP_STAGES = crop_config['stages']
+    total_days = crop_config['total_days']
+    
     # Build timeline with proper statuses
     timeline = []
     current_stage_name = None
@@ -64,16 +63,20 @@ async def get_lifecycle_status(email: str, db: Session = Depends(get_db)):
             "id": stage["id"],
             "label": stage["label"],
             "status": status,
-            "date": date_display
+            "date": date_display,
+            "description": stage.get("description", "")
         })
+    
+    # Calculate progress using crop-specific total days
+    progress_percentage = crop_loader.calculate_progress_percentage(farm.crop_type, day_count)
     
     return {
         "crop": farm.crop_type,
         "sowing_date": farm.sowing_date.isoformat(),
         "day_count": day_count,
         "current_stage": current_stage_name or "Unknown",
-        "total_days": 120,
-        "progress_percentage": min(day_count / 120.0 * 100, 100.0),
+        "total_days": total_days,
+        "progress_percentage": progress_percentage,
         "timeline": timeline,
         "history": [h.recommendation for h in history[-5:]]  # Last 5 recommendations
     }

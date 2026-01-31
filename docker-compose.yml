@@ -6,7 +6,7 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
         NEXT_PUBLIC_FIREBASE_API_KEY: ${NEXT_PUBLIC_FIREBASE_API_KEY}
         NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
         NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
@@ -14,10 +14,13 @@ services:
         NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
         NEXT_PUBLIC_FIREBASE_APP_ID: ${NEXT_PUBLIC_FIREBASE_APP_ID}
         NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID}
+        NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-CropMind AI}
+        NEXT_PUBLIC_ENABLE_PHONE_AUTH: ${NEXT_PUBLIC_ENABLE_PHONE_AUTH:-false}
+        NEXT_PUBLIC_ENABLE_DEMO_MODE: ${NEXT_PUBLIC_ENABLE_DEMO_MODE:-true}
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_INTERNAL_PORT:-3000}"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       - NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}
       - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
       - NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
@@ -25,6 +28,9 @@ services:
       - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
       - NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
       - NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=${NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID}
+      - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME:-CropMind AI}
+      - NEXT_PUBLIC_ENABLE_PHONE_AUTH=${NEXT_PUBLIC_ENABLE_PHONE_AUTH:-false}
+      - NEXT_PUBLIC_ENABLE_DEMO_MODE=${NEXT_PUBLIC_ENABLE_DEMO_MODE:-true}
     depends_on:
       - backend
 
@@ -32,26 +38,62 @@ services:
     container_name: crop-backend
     build: 
       context: ./backend
+      args:
+        APP_HOST: ${APP_HOST:-0.0.0.0}
+        APP_PORT: ${APP_PORT:-8000}
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:${BACKEND_INTERNAL_PORT:-8000}"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/cropmind
+      # Database
+      - DATABASE_URL=${DATABASE_URL}
+      # AI/LLM
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      - GROQ_ACTION_PLANNER_TEMPERATURE=${GROQ_ACTION_PLANNER_TEMPERATURE:-0.2}
+      - GROQ_TRANSLATION_TEMPERATURE=${GROQ_TRANSLATION_TEMPERATURE:-0.1}
+      - GROQ_MAX_TOKENS=${GROQ_MAX_TOKENS:-2048}
+      # RAG
       - PINECONE_API_KEY=${PINECONE_API_KEY}
       - PINECONE_INDEX=${PINECONE_INDEX:-cropmind}
       - PINECONE_HOST=${PINECONE_HOST}
+      - PINECONE_DIMENSION=${PINECONE_DIMENSION:-1536}
+      - PINECONE_TOP_K=${PINECONE_TOP_K:-3}
+      # Weather
+      - WEATHER_API_PROVIDER=${WEATHER_API_PROVIDER:-openweathermap}
+      - WEATHER_API_KEY=${WEATHER_API_KEY}
+      - WEATHER_API_ENDPOINT=${WEATHER_API_ENDPOINT:-https://api.openweathermap.org/data/2.5}
+      # CORS
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - CORS_ALLOW_CREDENTIALS=${CORS_ALLOW_CREDENTIALS:-true}
+      - CORS_METHODS=${CORS_METHODS:-GET,POST,PUT,DELETE,OPTIONS}
+      - CORS_HEADERS=${CORS_HEADERS:-*}
+      # Feature Flags
+      - ENABLE_RAG=${ENABLE_RAG:-true}
+      - ENABLE_WEATHER_API=${ENABLE_WEATHER_API:-false}
+      - ENABLE_MULTILINGUAL=${ENABLE_MULTILINGUAL:-true}
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      # App Config
+      - APP_NAME=${APP_NAME:-CropMind AI Backend}
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - API_WELCOME_MESSAGE=${API_WELCOME_MESSAGE:-CropMind AI API is online}
+      - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-English}
+      - DEFAULT_USER_NAME=${DEFAULT_USER_NAME:-Farmer}
     depends_on:
       - db
+    volumes:
+      - ./backend/app/config:/app/app/config:ro  # Mount config directory as read-only
 
   db:
     container_name: crop-db
     image: postgres:15
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=cropmind
+      - POSTGRES_USER=${POSTGRES_USER:-cropmind_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change_me_in_production}
+      - POSTGRES_DB=${POSTGRES_DB:-cropmind_db}
     ports:
-      - "5433:5432"
+      - "${DB_EXTERNAL_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
