@@ -60,7 +60,7 @@ services:
       - PINECONE_TOP_K=${PINECONE_TOP_K:-3}
       # Weather
       - WEATHER_API_PROVIDER=${WEATHER_API_PROVIDER:-openweathermap}
-      - WEATHER_API_KEY=${WEATHER_API_KEY}
+      - WEATHER_API_KEY=fe2db33c046a068d9f49037045135fe7
       - WEATHER_API_ENDPOINT=${WEATHER_API_ENDPOINT:-https://api.openweathermap.org/data/2.5}
       # CORS
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
@@ -69,7 +69,7 @@ services:
       - CORS_HEADERS=${CORS_HEADERS:-*}
       # Feature Flags
       - ENABLE_RAG=${ENABLE_RAG:-true}
-      - ENABLE_WEATHER_API=${ENABLE_WEATHER_API:-false}
+      - ENABLE_WEATHER_API=true
       - ENABLE_MULTILINGUAL=${ENABLE_MULTILINGUAL:-true}
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-INFO}

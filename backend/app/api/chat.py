@@ -5,9 +5,11 @@ from app.models.database import User, FarmProfile
 from app.schemas.schemas import ChatQuery, ChatResponse
 from app.services.agents.farming_agents import FarmingAgents
 from app.services.rag.rag_service import RAGService
+from app.services.weather import get_weather_service
 
 router = APIRouter()
 rag_service = RAGService()
+weather_service = get_weather_service()
 
 @router.post("/query")
 async def chat_query(data: ChatQuery, db: Session = Depends(get_db)):
@@ -17,11 +19,18 @@ async def chat_query(data: ChatQuery, db: Session = Depends(get_db)):
 
     farm = user.farm_profile
     
-    # Retrieve grounded knowledge
-    knowledge = await rag_service.get_relevant_advice(farm.crop_type, "Current", data.question)
+    # Determine stage for context
+    effective_stage = data.stage_id if data.stage_id else "Current"
     
+    # Retrieve grounded knowledge
+    knowledge = await rag_service.get_relevant_advice(farm.crop_type, effective_stage, data.question)
+    
+    # Get real weather context
+    weather_data = await weather_service.get_weather(farm.latitude, farm.longitude)
+    weather_context = f"{weather_data['condition']}, {weather_data['temperature']}°C"
+
     # Reasoning loop
-    raw_answer = await FarmingAgents.action_planner("Current", "Variable", knowledge, data.question)
+    raw_answer = await FarmingAgents.action_planner(effective_stage, weather_context, knowledge, data.question)
     
     # Translate to farmer's language
     final_answer = await FarmingAgents.translate_to_language(raw_answer, user.preferred_language)

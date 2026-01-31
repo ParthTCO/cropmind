@@ -31,11 +31,19 @@ export interface UserInfo {
     preferred_language: string;
 }
 
+export interface FarmTask {
+    id: number;
+    task_name: string;
+    is_completed: boolean;
+}
+
 export interface LifecycleStage {
     id: string;
     label: string;
     status: "completed" | "current" | "upcoming";
     date: string;
+    tasks: FarmTask[];
+    ai_summary?: string;
 }
 
 export interface LifecycleStatus {
@@ -46,6 +54,7 @@ export interface LifecycleStatus {
     total_days: number;
     progress_percentage: number;
     timeline: LifecycleStage[];
+    ai_summary?: string;
     history: string[];
     error?: string;
 }
@@ -150,7 +159,7 @@ export interface ChatMessage {
     actionable_steps: string[];
 }
 
-export async function sendChatMessage(email: string, question: string): Promise<ChatMessage> {
+export async function sendChatMessage(email: string, question: string, stageId?: string): Promise<ChatMessage> {
     const response = await fetch(`${API_URL}/chat/query`, {
         method: "POST",
         headers: {
@@ -158,7 +167,8 @@ export async function sendChatMessage(email: string, question: string): Promise<
         },
         body: JSON.stringify({
             user_email: email,
-            question: question
+            question: question,
+            stage_id: stageId
         }),
     });
     if (!response.ok) {
@@ -189,5 +199,27 @@ export async function submitOnboarding(data: OnboardingData): Promise<void> {
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || "Failed to submit onboarding data");
+    }
+}
+
+export async function toggleTask(email: string, taskId: number): Promise<void> {
+    const response = await fetch(`${API_URL}/lifecycle/toggle-task`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_email: email, task_id: taskId }),
+    });
+    if (!response.ok) {
+        throw new Error("Failed to toggle task");
+    }
+}
+
+export async function advanceStage(email: string): Promise<void> {
+    const response = await fetch(`${API_URL}/lifecycle/advance-stage?user_email=${encodeURIComponent(email)}`, {
+        method: "POST",
+    });
+    if (!response.ok) {
+        throw new Error("Failed to advance stage");
     }
 }

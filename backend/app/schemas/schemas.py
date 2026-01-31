@@ -26,12 +26,36 @@ class UserInfoResponse(BaseModel):
     has_farm_profile: bool
     preferred_language: str
 
+class FarmTaskResponse(BaseModel):
+    id: int
+    task_name: str
+    is_completed: bool
+    class Config:
+        from_attributes = True
+
 # Lifecycle Stage Schema
 class LifecycleStageResponse(BaseModel):
     id: str
     label: str
     status: str  # completed, current, upcoming
     date: str
+    tasks: List[FarmTaskResponse] = []
+    ai_summary: Optional[str] = None
+
+class LifecycleStatusResponse(BaseModel):
+    crop: str
+    sowing_date: date
+    day_count: int
+    current_stage: str
+    total_days: int
+    progress_percentage: float
+    timeline: List[LifecycleStageResponse]
+    ai_summary: Optional[str] = None
+    history: List[str]
+
+class ToggleTaskRequest(BaseModel):
+    user_email: EmailStr
+    task_id: int
 
 class UserCreate(UserBase):
     pass
@@ -62,6 +86,7 @@ class DashboardSummaryResponse(BaseModel):
 class ChatQuery(BaseModel):
     user_email: EmailStr
     question: str
+    stage_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
     answer: str

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, Text, Float
+from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, Text, Float, Boolean
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 import datetime
@@ -31,6 +31,7 @@ class FarmProfile(Base):
     user = relationship("User", back_populates="farm_profile")
     states = relationship("FarmState", back_populates="farm_profile")
     advice_history = relationship("AdviceHistory", back_populates="farm_profile")
+    tasks = relationship("FarmTask", back_populates="farm_profile")
 
 class FarmState(Base):
     __tablename__ = "farm_states"
@@ -65,3 +66,15 @@ class Alert(Base):
     message = Column(Text, nullable=False)
     severity = Column(String) # Info, Warning, Critical
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class FarmTask(Base):
+    __tablename__ = "farm_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    farm_id = Column(Integer, ForeignKey("farm_profiles.id"))
+    stage_id = Column(String, nullable=False) # e.g., 'planning', 'sowing'
+    task_name = Column(String, nullable=False)
+    is_completed = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    farm_profile = relationship("FarmProfile", back_populates="tasks")
