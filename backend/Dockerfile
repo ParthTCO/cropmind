@@ -6,27 +6,25 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Add PyYAML for crop config loading
-RUN pip install --no-cache-dir PyYAML
-
 # Copy application code
 COPY . .
 
-# Runtime configuration via ARGs (can be overridden in docker-compose)
-ARG APP_HOST=0.0.0.0
-ARG APP_PORT=8000
-ARG APP_MODULE=app.main:app
+# Expose port (documented for Render)
+EXPOSE 8000
 
-# Set as environment variables
-ENV APP_HOST=${APP_HOST}
-ENV APP_PORT=${APP_PORT}
-ENV APP_MODULE=${APP_MODULE}
+# Environment settings
+ENV PYTHONUNBUFFERED=1
 
-# Run the application with configurable parameters
-CMD uvicorn ${APP_MODULE} --host ${APP_HOST} --port ${APP_PORT}
+# Health check for Render
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+
+# Run the production server
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
