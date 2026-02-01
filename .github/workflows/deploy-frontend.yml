@@ -13,16 +13,33 @@ jobs:
       pages: write
       id-token: write
     
+    # Environment variables are required here because .env.local is ignored by git
+    env:
+      NEXT_PUBLIC_API_URL: https://cropmind-rufw.onrender.com
+      NEXT_PUBLIC_FIREBASE_API_KEY: AIzaSyBZNbvZY3FctvbooRZsvohfJ2rZrKpb-Z0
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: cropmind-c9961.firebaseapp.com
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: cropmind-c9961
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: cropmind-c9961.firebasestorage.app
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: 255972739471
+      NEXT_PUBLIC_FIREBASE_APP_ID: 1:255972739471:web:ec45f0a089e19a3cb2a3fa
+      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: G-YQBD7R7NVT
+      NEXT_PUBLIC_ENABLE_PHONE_AUTH: false
+      NEXT_PUBLIC_ENABLE_DEMO_MODE: true
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          
-      - name: Install pnpm
-        run: npm install -g pnpm
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
         
       - name: Install dependencies
         working-directory: ./frontend
